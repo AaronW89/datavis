@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+
+    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/dc/2.1.8/dc.min.css"/>
+
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.17/d3.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/crossfilter/1.3.12/crossfilter.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/dc/2.1.8/dc.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/queue-async/1.0.7/queue.min.js"></script>
+    
+</head>
+<body>
+    <h1>Data Mapping</h1>
+    <h3>US Deaths between 1962 and 2016</h3>
+    <div id="bchart1"></div>
+    <div id="pchart1"></div>
+    <div id="pchart3"></div>
+    <div id="rchart1"></div>
+    
+    <script>
+    queue()
+        .defer(d3.csv, "data/us_deaths.csv")
+        .await(makeGraphs);
+
+    function makeGraphs(error, deathData) {
+
+        var ndx = crossfilter(deathData);
+//------bar chart        
+        var year_dim = ndx.dimension(dc.pluck('Year'));
+        var count_by_gender = year_dim.group().reduceSum(dc.pluck('All Deaths'));
+        
+        dc.barChart("#bchart1")
+            .height(300)
+            .width(1700)
+            .margins({top: 10, right: 50, bottom: 30, left: 50})
+            .dimension(year_dim)
+            .group(count_by_gender)
+            .transitionDuration(500)
+            .x(d3.scale.ordinal())
+            .xUnits(dc.units.ordinal)
+            .xAxisLabel("Year")
+            .yAxis().ticks(8);            
+//------pie chart
+        
+        var state_dim = ndx.dimension(dc.pluck('State'));
+        var deaths_per_state = state_dim.group().reduceSum(dc.pluck('65+ years (all cause deaths)'));
+        dc.pieChart('#pchart1')
+            .height(330)
+            .radius(90)
+            .transitionDuration(1500)
+            .dimension(state_dim)
+            .group(deaths_per_state);
+//------row chart        
+        var city_dim = ndx.dimension(dc.pluck('City'));
+        var deaths_per_city = city_dim.group().reduceSum(dc.pluck('All Deaths'));
+        var chart = dc.rowChart("#rchart1");
+        chart
+            .width(600)
+            .height(330)
+            .dimension(city_dim)
+            .group(deaths_per_city)
+            .xAxis().ticks(7);
+
+        
+        dc.renderAll();
+        };
+    
+   
+    </script>
+    
+</body>
+</html>
